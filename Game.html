@@ -1,0 +1,20 @@
+<html>
+<canvas id="ctx" width="500" style="border:1px solid #000000;"></canvas>
+
+<script>
+var ctx = document.getElementById("ctx").getContext("2d");
+
+//1. Modify Settings =
+ctx.font = '30px Arial';    //Font used
+ctx.fillStyle = 'red';      //Color of the text and forms
+ctx.globalAlpha = 0.05;     //Transparency 0 = invisible, 1 = visible
+
+//2. Draw something ()
+ctx.fillText('Hello',50,50);     //Write text ... ctx.fillText('text',x,y);
+ctx.fillRect(50,50,100,100);     //Draw rectangle ... ctz.fillRect(startX,startY,width,height);
+ctx.clearRect(75,75,100,100);    //Clear Canvas ... ctx.fillRect(startx,startY,wifth,height);
+
+
+</script>
+
+</html>
