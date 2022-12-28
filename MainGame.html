@@ -24,6 +24,12 @@ var player = {
     width:20,
     height:20,
     color:'green',
+    atkSpd:1,
+    attackCounter:0,
+    pressingDown:false,
+    pressingUp:false,
+    pressingLeft:false,
+    pressingRight:false,
 };
 
 var enemyList = {};
@@ -69,6 +75,7 @@ enemyList[id] = enemy3;
 }
 
 document.onmousemove = function(mouse){
+/*
     var mouseX = mouse.clientX - 8;     //the non-hard coded version is document.getElementById('ctx').getBoundingClientRect().left;
     var mouseY = mouse.clientY - 8;     //the non-hard coded version is document.getElementById('ctx').getBoundingClientRect().top;
 
@@ -83,6 +90,49 @@ document.onmousemove = function(mouse){
     
     player.x = mouseX;
     player.y = mouseY;
+*/
+}
+
+document.onkeydown = function(event){
+    if(event.keyCode === 68)     //d
+        player.pressingRight = true;
+    else if(event.keyCode === 83)     //s
+        player.pressingDown = true;
+    else if(event.keyCode === 65)     //a
+        player.pressingLeft = true;
+    else if(event.keyCode === 87)     //w
+        player.pressingUp = true;     
+}
+
+document.onkeyup = function(event){
+    if(event.keyCode === 68)     //d
+        player.pressingRight = false;
+    else if(event.keyCode === 83)     //s
+        player.pressingDown = false;
+    else if(event.keyCode === 65)     //a
+        player.pressingLeft = false;
+    else if(event.keyCode === 87)     //w
+        player.pressingUp = false;     
+}
+
+updatePlayerPosition = function(){
+    if(player.pressingRight)
+        player.x += 10;
+    if(player.pressingLeft)
+        player.x -= 10;
+    if(player.pressingDown)
+        player.y += 10;
+    if(player.pressingUp)
+        player.y -= 10;
+
+    if(player.x < player.width/2)
+        player.x = player.width/2;
+    if(player.x > WIDTH-player.width/2)
+        player.x = WIDTH-player.width/2;
+    if(player.y < player.height/2)
+        player.y = player.height/2;
+    if(player.y > HEIGHT-player.height/2)
+        player.y = HEIGHT-player.height/2;
 }
 
 updateEntity = function (something){
@@ -125,6 +175,14 @@ drawEntity = function(something){
     ctx.restore();
 }
 
+document.onclick = function(mouse){
+    if(player.attackCounter > 25){     //every 1 sec
+        randomlyGenerateBullet();
+        player.attackCounter = 0;     //after generating bullet you want to reset the counter
+    }
+}
+counter = 0;
+
 update = function () {
     ctx.clearRect(0,0,WIDTH,HEIGHT);
     frameCount = frameCount + 1;     //can be abbreviated to frameCount++
@@ -136,12 +194,17 @@ update = function () {
     if(frameCount % 75 === 0)         //modules explained: if 11 % 5 (eleven module of 5), it = 1 because there is a remainder of 1. 14 it would be 4, 13 it would be 3. 15 it would be 0. useful for periodic things
         randomlyGenerateUpgrade();    //every 3 sec
 
-    if(frameCount % 25 === 0)         
-        randomlyGenerateBullet();    //every 1 sec
-    
+    player.attackCounter += player.atkSpd;
 
     for(var key in bulletList){     //this is a loop. for is generally used for loops
         updateEntity(bulletList[key]);
+        
+        var toRemove = false;
+        bulletList[key].timer++;
+        if(bulletList[key].timer > 100){
+            toRemove = true;                                 //delete bulletList[key];
+                                             //continue     //don't do the rest of the code for this iteration of the loop, move on to the next one in the list
+        }
 
         for(var key2 in enemyList){     //this is a loop. for is generally used for loops
             var isColliding = testCollisionEntity(bulletList[key],enemyList[key2]);
@@ -151,14 +214,20 @@ update = function () {
                 break;     //use break to stop a loop
             }
         }
+        if(toRemove){
+            delete bulletList[key];
+        }
     }
     
     for(var key in upgradeList){     //this is a loop. for is generally used for loops
         updateEntity(upgradeList[key]);
         var isColliding = testCollisionEntity(player,upgradeList[key]);
         if(isColliding){
-            score += 1000; 
-            delete upgradeList[key];     //this will remove the attribute key from the upgrade list
+            if(upgradeList[key].category === 'score')
+                score += 1000; 
+            if(upgradeList[key].category === 'atkSpd')
+                player.atkSpd += 3;
+             delete upgradeList[key];     //this will remove the attribute key from the upgrade list
         }
     }
 
@@ -176,7 +245,7 @@ update = function () {
                 console.log("You Lost! you survivied for " + timeSurvived + "ms.");
                 startNewGame();
             }
-
+    updatePlayerPosition();
     drawEntity(player);
     ctx.fillText(player.hp + "HP",0,30);
     ctx.fillText('Score: ' + score,200,30);
@@ -206,7 +275,7 @@ randomlyGenerateEnemy = function(){     //Math.random is a special function that
     Enemy(id,x,y,spdX,spdY,width,height);
 }
 
-upgrade = function (id,x,y,spdX,spdY,width,height){
+upgrade = function (id,x,y,spdX,spdY,width,height,category,color){
     var enemy3 = {
     x:x,
     spdX:spdX,
@@ -216,7 +285,8 @@ upgrade = function (id,x,y,spdX,spdY,width,height){
     id:id,
     width:width,
     height:height,
-    color:'orange',
+    color:color,
+    category:category,
 };
 upgradeList[id] = enemy3;
 }
@@ -229,7 +299,17 @@ randomlyGenerateUpgrade = function(){
     var id = Math.random();
     var spdX = 0;
     var spdY = 0;
-    upgrade(id,x,y,spdX,spdY,width,height);
+
+    if(Math.random()<0.5){
+        var category = 'score';
+        var color = 'orange';
+    }
+    else{
+        var category = 'atkSpd';
+        var color = 'purple';
+    }
+
+    upgrade(id,x,y,spdX,spdY,width,height,category,color);
 }
 
 bullet = function (id,x,y,spdX,spdY,width,height){
@@ -243,6 +323,7 @@ bullet = function (id,x,y,spdX,spdY,width,height){
     width:width,
     height:height,
     color:'black',
+    timer:0,
 };
 bulletList[id] = enemy3;
 }
